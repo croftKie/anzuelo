@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   StyleSheet,
   TextInput,
@@ -9,10 +9,71 @@ import {
 } from "react-native";
 import axios from "axios";
 import { PushButton } from "../generics/PushButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const Login = ({ navigation }) => {
-  const [input, setInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [passInput, setPassInput] = useState("");
+  const [confirmInput, setConfirmInput] = useState("");
   const [loginMode, setLoginMode] = useState(true);
+  const [result, setResult] = useState(false);
+
+  const storeData = async (value) => {
+    try {
+      await AsyncStorage.setItem("key", value);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const getData = async () => {
+    try {
+      const value = await AsyncStorage.getItem("key");
+      if (value !== null) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const login = async () => {
+    try {
+      const { data } = await axios.get(
+        `https://contractor-backend.onrender.com/auth/login?email=${emailInput}&pass=${passInput}`
+      );
+      storeData(data.key);
+      setResult(true);
+      console.log(data);
+      navigate();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const signup = async () => {
+    try {
+      const { data } = await axios.get(
+        `https://contractor-backend.onrender.com/auth/signup?email=${emailInput}&pass=${passInput}&confirm=${confirmInput}`
+      );
+      storeData(data.key);
+      setResult(true);
+      console.log(data);
+      navigate();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const navigate = async () => {
+    if (result) {
+      navigation.navigate("DrawNav");
+    }
+  };
+
+  useEffect(() => {
+    const value = getData();
+    setResult(value);
+  }, []);
 
   return (
     <View style={styles.dashboardView}>
@@ -27,14 +88,19 @@ export const Login = ({ navigation }) => {
             <TextInput
               style={styles.dashboardInput}
               placeholder="Email Address"
-              onChangeText={() => {}}
-              value={input}
+              onChangeText={(v) => {
+                setEmailInput(v);
+              }}
+              value={emailInput}
             />
             <TextInput
+              secureTextEntry={true}
               style={styles.dashboardInput}
               placeholder="Password"
-              onChangeText={() => {}}
-              value={input}
+              onChangeText={(v) => {
+                setPassInput(v);
+              }}
+              value={passInput}
             />
           </>
         ) : (
@@ -42,24 +108,41 @@ export const Login = ({ navigation }) => {
             <TextInput
               style={styles.dashboardInput}
               placeholder="Email Address"
-              onChangeText={() => {}}
-              value={input}
+              onChangeText={(v) => {
+                setEmailInput(v);
+              }}
+              value={emailInput}
             />
             <TextInput
+              secureTextEntry={true}
               style={styles.dashboardInput}
               placeholder="Password"
-              onChangeText={() => {}}
-              value={input}
+              onChangeText={(v) => {
+                setPassInput(v);
+              }}
+              value={passInput}
             />
             <TextInput
+              secureTextEntry={true}
               style={styles.dashboardInput}
               placeholder="Confirm Password"
-              onChangeText={() => {}}
-              value={input}
+              onChangeText={(v) => {
+                setConfirmInput(v);
+              }}
+              value={confirmInput}
             />
           </>
         )}
-        <PushButton text={loginMode ? "Login" : "Sign Up"} onPress={() => {}} />
+        <PushButton
+          text={loginMode ? "Login" : "Sign Up"}
+          onPress={() => {
+            if (loginMode) {
+              login();
+            } else {
+              signup();
+            }
+          }}
+        />
         <Pressable
           onPress={() => setLoginMode(!loginMode)}
           style={{ marginTop: 20 }}
@@ -79,7 +162,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     marginTop: 24,
-    gap: 16,
+    gap: 8,
   },
   dashboardInput: {
     fontSize: 18,
@@ -93,7 +176,7 @@ const styles = StyleSheet.create({
     borderColor: "#2F2F2F",
   },
   img: {
-    height: 200,
+    height: 100,
     width: 300,
   },
   recentContainer: {
